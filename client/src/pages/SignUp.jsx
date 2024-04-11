@@ -1,7 +1,48 @@
-import { Link } from "react-router-dom"
-import { Label, TextInput, Button } from "flowbite-react"
+import { useState } from "react"
+import { Link, useNavigate } from "react-router-dom"
+import { Label, TextInput, Button, Alert, Spinner } from "flowbite-react"
 
 const SignUp = () => {
+  const [formData, setFormData] = useState({})
+  const [errorMessage, setErrorMessage] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
+
+  const handleChange = e => {
+    setErrorMessage(null)
+    setFormData({ ...formData, [e.target.id]: e.target.value.trim() })
+  }
+
+  const handleSubmit = async e => {
+    e.preventDefault()
+    if (!formData.username || !formData.email || !formData.password) {
+      return setErrorMessage("Please fill out all fields.")
+    }
+
+    try {
+      setLoading(true)
+      setErrorMessage(null)
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+      })
+      const data = await res.json()
+      if (data.success === false) {
+        setErrorMessage(data.message)
+      }
+      setLoading(false)
+      if (res.ok) {
+        navigate("/signIn")
+      }
+      console.log(data)
+    } catch (error) {
+      setErrorMessage(error.message)
+      setLoading(false)
+      console.log(error.message)
+    }
+  }
+
   return (
     <div className='min-h-screen mt-20 '>
       {/*Content container*/}
@@ -23,40 +64,69 @@ const SignUp = () => {
         {/* End of first section */}
         <div className='flex-1'>
           {/* Second section */}
-          <form className='flex flex-col gap-4'>
+          <form className='flex flex-col gap-4' onSubmit={handleSubmit}>
             {/**/}
             <div className=''>
               {/* username field */}
               <Label value='Your Username' />
-              <TextInput type='text' placeholder='Username' id='username' />
+              <TextInput
+                type='text'
+                placeholder='Username'
+                id='username'
+                onChange={handleChange}
+              />
             </div>
             {/*end of username field*/}
             <div className=''>
               {/*email field*/}
               <Label value='Your Email' />
               <TextInput
-                type='text'
+                type='email'
                 placeholder='email@example.com'
                 id='email'
+                onChange={handleChange}
               />
             </div>
             {/*end of email field*/}
             <div className=''>
               {/*password field*/}
               <Label value='Your Password' />
-              <TextInput type='text' placeholder='Password' id='password' />
+              <TextInput
+                type='password'
+                placeholder='Password'
+                id='password'
+                onChange={handleChange}
+              />
             </div>
             {/*end of password field*/}
-            <Button gradientDuoTone='purpleToPink' type='submit'>
-              Sign Up
+            <Button
+              gradientDuoTone='purpleToPink'
+              type='submit'
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Spinner size='sm' />
+                  <span className='ml-2'>Loading...</span>
+                </>
+              ) : (
+                "Sign Up"
+              )}
             </Button>
           </form>
           <div className='flex gap-2 text-sm mt-5'>
             {/*Extra section*/}
             <span className=''>Already have an account?</span>
-            <Link to="/signin" className='text-blue-500'>Sign In</Link>
+            <Link to='/signin' className='text-blue-500'>
+              Sign In
+            </Link>
           </div>
           {/*Ens of extra section*/}
+          {errorMessage && (
+            <Alert className='mt-5' color='failure'>
+              {errorMessage}
+            </Alert>
+          )}
         </div>
         {/* End of second section */}
       </div>
